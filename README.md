@@ -35,17 +35,17 @@ luacpp11::push_callable<int(double)>(L, Ftor());
 ```
 
 functions that have to extract the arguments themselves from the lua state
-should take exactly one argument of type `lua_State*`. Functions that handle
-the return values themselves should be declared with return type
-`luacpp11::luareturn`. Notice that pushing a `lua_CFunction` with `push_callable`
-will not give the desired result since it has return type `int` (just  keep using
-`lua_pushcfunction` for that). 
+should take exactly one argument of type `lua_State*` at the end of their
+parameter list. Functions that handle the return values themselves should be
+declared with return type `luacpp11::luareturn`. Notice that pushing a
+`lua_CFunction` with `push_callable` will not give the desired result since it
+has return type `int` (just  keep using `lua_pushcfunction` for that). 
 
 ```c++
-luacpp11::luareturn foo(lua_State *L)
+luacpp11::luareturn foo(int k, lua_State *L)
 {
     std::cout << lua_gettop(L) << " arguments" << std::endl;
-    lua_pushinteger(L, 42);
+    lua_pushinteger(L, k);
     return 1;
 }
 ...

@@ -43,6 +43,64 @@ struct make_int_seq {
     typedef typename build_int_seq<L, int_seq< > >::value value;
 };
 
+template<class seq, class T>
+struct count;
+
+template<class T, class U, class... Rest>
+struct count<type_seq<U, Rest...>, T> {
+    static const size_t value = count<type_seq<Rest...>, T >::value + (std::is_same<U, T>::value?1:0); 
+};
+
+template<class T>
+struct count<type_seq< >, T> {
+    static const size_t value = 0; 
+};
+
+template<class seq, class T>
+struct contains;
+
+template<class T, class U, class... Rest>
+struct contains<type_seq<U, Rest...>, T> {
+    static const bool value = count<type_seq<Rest...>, T >::value || std::is_same<T, U>::value; 
+};
+
+template<class T>
+struct contains<type_seq< >, T> {
+    static const bool value = false; 
+};
+
+template<class seq>
+struct first;
+
+template<class T, class... Rest>
+struct first< type_seq<T, Rest...> > {
+    typedef T type;
+};
+
+template<>
+struct first< type_seq< > > {
+    typedef void type;
+};
+
+template<class seq>
+struct last;
+
+template<class T, class... Rest>
+struct last< type_seq<T, Rest...> > {
+    typedef typename last< type_seq<Rest...> >::type type;
+};
+
+template<class T>
+struct last< type_seq<T> > {
+    typedef T type;
+};
+
+template<>
+struct last< type_seq< > > {
+    typedef void type;
+};
+
+
 template<class T>
 struct is_const_or_refers_to_const { static const bool value = false; };
 
@@ -428,10 +486,26 @@ public:
     
     int static cfunction_call(lua_State *L)
     {
-        if(!std::is_same<Arguments, type_seq<lua_State*> >::value && lua_gettop(L) != sizeof...(Args))
+        static_assert(count<Arguments, lua_State* >::value <= 1, "to many lua_State* arguments");
+        static_assert((count<Arguments, lua_State* >::value != 1) || 
+                    (std::is_same<typename last<Arguments>::type, lua_State*>::value), 
+                    "lua_State* has to be last argument");
+
+        if(count<Arguments, lua_State* >::value == 0)
         {
-            lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
-            lua_error(L);
+            if(lua_gettop(L) != sizeof...(Args))
+            {
+                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_error(L);
+            }
+        }
+        else if(count<Arguments, lua_State* >::value == 1)
+        {
+            if(lua_gettop(L) < sizeof...(Args)-1)
+            {
+                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_error(L);
+            }            
         }
         
         CallHelper &helper = *static_cast <CallHelper*> (lua_touserdata (L, lua_upvalueindex (1)));
@@ -467,10 +541,26 @@ public:
     
     int static cfunction_call(lua_State *L)
     {
-        if(!std::is_same<Arguments, type_seq<lua_State*> >::value && lua_gettop(L) != sizeof...(Args))
+        static_assert(count<Arguments, lua_State* >::value <= 1, "to many lua_State* arguments");
+        static_assert((count<Arguments, lua_State* >::value != 1) || 
+                    (std::is_same<typename last<Arguments>::type, lua_State*>::value), 
+                    "lua_State* has to be last argument");
+
+        if(count<Arguments, lua_State* >::value == 0)
         {
-            lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
-            lua_error(L);
+            if(lua_gettop(L) != sizeof...(Args))
+            {
+                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_error(L);
+            }
+        }
+        else if(count<Arguments, lua_State* >::value == 1)
+        {
+            if(lua_gettop(L) < sizeof...(Args)-1)
+            {
+                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_error(L);
+            }            
         }
         
         CallHelper &helper = *static_cast <CallHelper*> (lua_touserdata (L, lua_upvalueindex (1)));
@@ -506,10 +596,26 @@ public:
     
     int static cfunction_call(lua_State *L)
     {
-        if(!std::is_same<Arguments, type_seq<lua_State*> >::value && lua_gettop(L) != sizeof...(Args))
+        static_assert(count<Arguments, lua_State* >::value <= 1, "to many lua_State* arguments");
+        static_assert((count<Arguments, lua_State* >::value != 1) || 
+                    (std::is_same<typename last<Arguments>::type, lua_State*>::value), 
+                    "lua_State* has to be last argument");
+
+        if(count<Arguments, lua_State* >::value == 0)
         {
-            lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
-            lua_error(L);
+            if(lua_gettop(L) != sizeof...(Args))
+            {
+                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_error(L);
+            }
+        }
+        else if(count<Arguments, lua_State* >::value == 1)
+        {
+            if(lua_gettop(L) < sizeof...(Args)-1)
+            {
+                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_error(L);
+            }            
         }
         
         CallHelper &helper = *static_cast <CallHelper*> (lua_touserdata (L, lua_upvalueindex (1)));

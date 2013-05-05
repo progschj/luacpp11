@@ -25,7 +25,7 @@ struct Foo {
 // if the function is supposed to handle arguments itself there has to be
 // exactly one lua_State* argument. If there are other arguments it will treat
 // the lua_State just as a regular pointer argument.
-luacpp11::luareturn bar(lua_State *L)
+luacpp11::luareturn bar(int, lua_State *L)
 {
     std::cout << "bar called with " << lua_gettop(L) << " arguments" << std::endl;
     lua_pushinteger(L, 23);
@@ -82,7 +82,6 @@ int main(int argc, char *argv[]) {
     
     int result = luaL_dostring(L,
         "hello()\n"
-        "print(bar())\n"
         "print(bar(1,2,3))\n"
         "print(baz())\n"
         "print(foo(11))\n"
