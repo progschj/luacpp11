@@ -74,7 +74,7 @@ luacpp11::push(L, &a); // which means this is ok too
 
 ### `is`
 `is<T>` returns true if the object at a given index is of type `T`. Notice that
-that `T`, `const T`, `T*` and const `T*` are different types in this context
+that `T`, `const T`, `T*` and `const T*` are different types in this context
 (`&T` is interpreted as `T` though).
 
 ```c++
@@ -86,7 +86,7 @@ luacpp11::is<const A*>(L, -1);  // false
 ```
 
 ### `to`
-`to<T>` retrieves a object of type `T` from a given index and throw an exception
+`to<T>` retrieves a object of type `T` from a given index and throws an exception
 in case of a type mismatch. This function will "convert" from and to pointer
 types as well as to const.
 
@@ -112,7 +112,7 @@ luacpp11::to<const A*>(L, -1);  // ok
 ```
 ### `getmetatable`
 `getmetatable<T>` pushes the metatable associated with T onto the stack. Again
-`T`, `const T`, `T*` and const `T*` are different types in this context and will
+`T`, `const T`, `T*` and `const T*` are different types in this context and will
 all give different metatables. Comparing this metatable with the table returned
 by `lua_getmetatable` for a given object can be used to test wether that object
 is of type `T` (this is what `is` does).
