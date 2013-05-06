@@ -39,8 +39,8 @@ should take exactly one argument of type `lua_State*` at the end of their
 parameter list. Functions that handle the return values themselves should be
 declared with return type `luacpp11::luareturn`. Notice that pushing a
 `lua_CFunction` with `push_callable` will not give the desired result since it
-has return type `int` (just  keep using `lua_pushcfunction` for that). 
-
+has return type `int` (just  keep using `lua_pushcfunction` for that).
+Multiple return values can also be returned to lua by returning a `std::tuple`.
 ```c++
 luacpp11::luareturn foo(int k, lua_State *L)
 {
