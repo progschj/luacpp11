@@ -7,6 +7,7 @@
 
 #include "luacpp11.hpp"
 
+// the index metamethod simply fowards to metatable entries
 luacpp11::luareturn index_metamethod(lua_State *L)
 {
     lua_getmetatable(L, -2);
@@ -16,6 +17,7 @@ luacpp11::luareturn index_metamethod(lua_State *L)
     return 1;
 }
 
+// adds the index metamethod to a type T
 template<class T>
 void add_index_metamethod(lua_State *L)
 {    
@@ -26,6 +28,7 @@ void add_index_metamethod(lua_State *L)
     lua_pop(L, 1);
 }
 
+// setup index metamethods to all "variants" of type T
 template<class T>
 void register_class(lua_State *L)
 {
@@ -37,6 +40,7 @@ void register_class(lua_State *L)
     lua_pop(L, 1);
 }
 
+// add a function to the metatable of T
 template<class T, class F>
 void add_function_single(lua_State *L, const std::string &name, F &&f)
 {
@@ -47,6 +51,7 @@ void add_function_single(lua_State *L, const std::string &name, F &&f)
     lua_pop(L, 1);
 }
 
+// add non const functions only to the tables of non const types
 template<class T, class R, class... Args>
 void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...))
 {
@@ -54,6 +59,7 @@ void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...))
     add_function_single<T*>(L, name, f);
 }
 
+// add const functions to all metatables
 template<class T, class R, class... Args>
 void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...) const)
 {
@@ -70,7 +76,7 @@ int main(int argc, char *argv[]) {
 
     register_class< std::vector<int> >(L);
     add_function< std::vector<int> >(L, "size", &std::vector<int>::size);
-    add_function< std::vector<int> >(L, "resize", (void (std::vector<int>::*)(size_t))&std::vector<int>::resize);
+    add_function< std::vector<int> >(L, "resize", static_cast<void (std::vector<int>::*)(size_t)>(&std::vector<int>::resize));
     
     std::vector<int> vec;
     luacpp11::push(L,  &vec);
