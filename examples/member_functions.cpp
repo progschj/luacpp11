@@ -1,0 +1,102 @@
+#include <iostream>
+#include <vector>
+
+#include <lua.hpp>
+#include <lualib.h>
+#include <lauxlib.h>
+
+#include "luacpp11.hpp"
+
+luacpp11::luareturn index_metamethod(lua_State *L)
+{
+    lua_getmetatable(L, -2);
+    lua_pushvalue(L, -2);
+    lua_rawget(L, -2);
+    lua_remove(L, -2);
+    return 1;
+}
+
+template<class T>
+void add_index_metamethod(lua_State *L)
+{    
+    luacpp11::getmetatable<T>(L);
+    lua_pushstring(L, "__index");
+    luacpp11::push_callable(L, index_metamethod);
+    lua_rawset(L, -3);
+    lua_pop(L, 1);
+}
+
+template<class T>
+void register_class(lua_State *L)
+{
+    lua_newtable(L);
+    add_index_metamethod<T>(L);
+    add_index_metamethod<const T>(L);
+    add_index_metamethod<T*>(L);
+    add_index_metamethod<const T*>(L);
+    lua_pop(L, 1);
+}
+
+template<class T, class F>
+void add_function_single(lua_State *L, const std::string &name, F &&f)
+{
+    luacpp11::getmetatable< T >(L);
+    lua_pushstring(L, name.c_str());
+    luacpp11::push_callable(L, std::forward<F>(f));
+    lua_rawset(L, -3);
+    lua_pop(L, 1);
+}
+
+template<class T, class R, class... Args>
+void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...))
+{
+    add_function_single<T>(L, name, f);
+    add_function_single<T*>(L, name, f);
+}
+
+template<class T, class R, class... Args>
+void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...) const)
+{
+    add_function_single<T>(L, name, f);
+    add_function_single<T*>(L, name, f);
+    add_function_single<const T>(L, name, f);
+    add_function_single<const T*>(L, name, f);
+}
+
+int main(int argc, char *argv[]) {
+    lua_State *L = luaL_newstate();
+
+    luaL_openlibs(L);
+
+    register_class< std::vector<int> >(L);
+    add_function< std::vector<int> >(L, "size", &std::vector<int>::size);
+    add_function< std::vector<int> >(L, "resize", (void (std::vector<int>::*)(size_t))&std::vector<int>::resize);
+    
+    std::vector<int> vec;
+    luacpp11::push(L,  &vec);
+    lua_setglobal(L, "vec");
+
+    const std::vector<int> vec2(42);
+    luacpp11::push(L,  &vec2);
+    lua_setglobal(L, "vec2");
+    
+    
+    int result = luaL_dostring(L,
+        "print(\"vector:\")\n"
+        "print(vec:size())\n"
+        "vec:resize(12)\n"
+        "print(vec:size())\n"
+
+        "print(\"\\nconst vector:\")\n"
+        "print(vec2:size())\n"
+        "vec2:resize(12)\n" // should error since vec2 is const
+        "print(vec2:size())\n"
+    );
+    if (result) {
+        std::cerr << "Error: " << lua_tostring(L, -1) << std::endl;
+    }
+        
+    lua_close(L);
+
+    return 0;
+}

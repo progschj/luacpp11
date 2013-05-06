@@ -285,7 +285,7 @@ struct StackHelper<T, typename std::enable_if<std::is_lvalue_reference<T>::value
 };
 
 template<class T>
-struct StackHelper<T, typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value >::type> {
+struct StackHelper<T, typename std::enable_if<std::is_integral<T>::value && !std::is_same<typename std::remove_cv<T>::type, bool>::value >::type> {
     template<int Index>
     static T get(lua_State *L)
     {
@@ -311,7 +311,7 @@ struct StackHelper<T, typename std::enable_if<std::is_integral<T>::value && !std
 };
 
 template<class T>
-struct StackHelper<T, typename std::enable_if<std::is_same<T, bool>::value >::type> {
+struct StackHelper<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, bool>::value >::type> {
     template<int Index>
     static T get(lua_State *L)
     {
