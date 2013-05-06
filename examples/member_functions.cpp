@@ -70,6 +70,8 @@ void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...) cons
 }
 
 int main(int argc, char *argv[]) {
+    (void)argc; (void)argv;
+    
     lua_State *L = luaL_newstate();
 
     luaL_openlibs(L);

@@ -237,20 +237,20 @@ struct StackHelper {
     }
     static void push(lua_State *L, const T& value)
     {
-        T *userdata = new (lua_newuserdata(L, sizeof(T))) T(value);
+        new (lua_newuserdata(L, sizeof(T))) T(value);
         getmetatable(L);
         lua_setmetatable(L, -2);
     }
     static void push(lua_State *L, T&& value)
     {
-        T *userdata = new (lua_newuserdata(L, sizeof(T))) T(std::move(value));
+        new (lua_newuserdata(L, sizeof(T))) T(std::move(value));
         getmetatable(L);
         lua_setmetatable(L, -2);
     }
     template<class... Args>
     static void emplace(lua_State *L, Args&&... args)
     {
-        T *userdata = new (lua_newuserdata(L, sizeof(T))) T(std::forward<Args>(args)...);
+        new (lua_newuserdata(L, sizeof(T))) T(std::forward<Args>(args)...);
         getmetatable(L);
         lua_setmetatable(L, -2);
     }
@@ -434,7 +434,7 @@ struct TupleStackHelper {
 
 template<class T>
 struct TupleStackHelper<T, 0> {
-    static void push(lua_State *L, const T &values)
+    static void push(lua_State*, const T&)
     {
     }        
 };

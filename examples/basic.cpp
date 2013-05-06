@@ -39,6 +39,8 @@ std::tuple<int, double> baz()
 }
 
 int main(int argc, char *argv[]) {
+    (void)argc; (void)argv;
+
     lua_State *L = luaL_newstate();
 
     luaL_openlibs(L);
