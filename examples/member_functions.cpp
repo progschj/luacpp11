@@ -7,7 +7,7 @@
 
 #include "luacpp11.hpp"
 
-// the index metamethod simply fowards to metatable entries
+// the index metamethod simply forwards to metatable entries
 luacpp11::luareturn index_metamethod(lua_State *L)
 {
     lua_getmetatable(L, -2);
@@ -28,7 +28,7 @@ void add_index_metamethod(lua_State *L)
     lua_pop(L, 1);
 }
 
-// setup index metamethods to all "variants" of type T
+// setup index metamethods for all "variants" of type T
 template<class T>
 void register_class(lua_State *L)
 {
@@ -51,7 +51,7 @@ void add_function_single(lua_State *L, const std::string &name, F &&f)
     lua_pop(L, 1);
 }
 
-// add non const functions only to the tables of non const types
+// add non const functions only to the metatables of non const types
 template<class T, class R, class... Args>
 void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...))
 {
