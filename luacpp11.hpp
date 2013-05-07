@@ -17,6 +17,11 @@ struct luareturn {
     int count;
 };
 
+template<class T>
+struct register_hook {
+    static void on_register(lua_State *L) { }
+};
+
 namespace detail {
     
 // sequence handling tools
@@ -126,17 +131,31 @@ template<class T, class Enable = void>
 struct StackHelper;
 
 template<class T>
+bool userdataIs(lua_State *L, int index)
+{
+    if(lua_getmetatable(L, index) == 0)
+        return false;
+    StackHelper<T>::getmetatable(L);
+    bool equal = lua_rawequal(L, -1, -2);
+    lua_pop(L, 2);
+    return equal;
+}
+
+template<class T>
 T* getPointer(lua_State *L, int index)
 {
-    if(StackHelper<T*>::is(L, index))
+    if(!lua_isuserdata(L, index))
+        return nullptr;
+
+    if(userdataIs<T*>(L, index))
     {
         return *static_cast<T**>(lua_touserdata(L, index));   
     }
-    else if(StackHelper<T>::is(L, index))
+    else if(userdataIs<T>(L, index))
     {
         return static_cast<T*>(lua_touserdata(L, index));   
     }
-    else if(StackHelper< std::shared_ptr<T> >::is(L, index))
+    else if(userdataIs< std::shared_ptr<T> >(L, index))
     {
         return static_cast<std::shared_ptr<T>*>(lua_touserdata(L, index))->get();   
     }
@@ -152,16 +171,19 @@ T* getPointer(lua_State *L, int index)
 
 template<class T>
 bool canGetPointer(lua_State *L, int index)
-{    
-    if(StackHelper<T*>::is(L, index))
+{ 
+    if(!lua_isuserdata(L, index))
+        return false;
+            
+    if(userdataIs<T*>(L, index))
     {
         return true;   
     }
-    else if(StackHelper<T>::is(L, index))
+    else if(userdataIs<T>(L, index))
     {
         return true;   
     }
-    else if(StackHelper< std::shared_ptr<T> >::is(L, index))
+    else if(userdataIs< std::shared_ptr<T> >(L, index))
     {
         return true;   
     }
@@ -226,7 +248,6 @@ struct GetHelper<U*> {
     }
 };
 
-
 template<class T, class Enable>
 struct StackHelper {
     template<int Index>
@@ -256,12 +277,7 @@ struct StackHelper {
     {
         if(!lua_isuserdata(L, index))
             return false;
-        if(lua_getmetatable(L, index) == 0)
-            return false;
-        getmetatable(L);
-        bool equal = lua_rawequal(L, -1, -2);
-        lua_pop(L, 2);
-        return equal;
+        return userdataIs<T>(L, index);
     }
     static void push(lua_State *L, const T& value)
     {
@@ -294,6 +310,10 @@ struct StackHelper {
             lua_pushcfunction(L, destroy_T);
             lua_rawset(L, -3);
             iter = index_table.insert(map_entry_t(L, luaL_ref(L, LUA_REGISTRYINDEX))).first;
+            
+            lua_rawgeti(L, LUA_REGISTRYINDEX, iter->second);
+            register_hook<T>::on_register(L);
+            return;            
         }
         lua_rawgeti(L, LUA_REGISTRYINDEX, iter->second);
     }
@@ -531,7 +551,7 @@ public:
         {
             if(lua_gettop(L) < sizeof...(Args)-1)
             {
-                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_pushfstring(L, "expected at least %d arguments but got %d", sizeof...(Args), lua_gettop(L));
                 lua_error(L);
             }            
         }
@@ -586,7 +606,7 @@ public:
         {
             if(lua_gettop(L) < sizeof...(Args)-1)
             {
-                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_pushfstring(L, "expected at least %d arguments but got %d", sizeof...(Args), lua_gettop(L));
                 lua_error(L);
             }            
         }
@@ -641,7 +661,7 @@ public:
         {
             if(lua_gettop(L) < sizeof...(Args)-1)
             {
-                lua_pushfstring(L, "expected %d arguments but got %d", sizeof...(Args), lua_gettop(L));
+                lua_pushfstring(L, "expected at least %d arguments but got %d", sizeof...(Args), lua_gettop(L));
                 lua_error(L);
             }            
         }

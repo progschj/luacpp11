@@ -162,3 +162,34 @@ if(lua_isfunction(L, -1))
     
 lua_pop(L, 2);
 ```
+
+### The `register_hook` trait
+
+The `register_hook` trait can be used to execute code whenever luacpp11 internally
+creates a metatable for a given type. This happens once per type and lua_State
+on first use of the type. This can be used to perform more elaborate type
+type registration (like adding metamethods etc.) on demand.
+
+```c++
+namespace luacpp11 {
+    template<class T>
+    struct register_hook< std::vector<T> > {
+        static void on_register(lua_State *L)
+        {
+            lua_pushstring(L, "__len");
+            // __len can have a second nil argument so we can't use ::size directly
+            luacpp11::push_callable<size_t(std::vector<T>*, lua_State*)>(L, 
+                [](std::vector<T> *v, lua_State*){ return v->size(); }
+            );
+            lua_rawset(L, -3);
+        }
+    };
+}
+//...
+luacpp11::emplace< std::vector<int> >(L, 13);
+lua_setglobal(L, "vec");
+luaL_dostring(L, "print(#vec)\n"); // prints vector size (13)
+
+```
+
+

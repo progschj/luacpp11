@@ -32,14 +32,12 @@ void add_index_metamethod(lua_State *L)
 template<class T>
 void register_class(lua_State *L)
 {
-    lua_newtable(L);
     add_index_metamethod<T>(L);
     add_index_metamethod<const T>(L);
     add_index_metamethod<T*>(L);
     add_index_metamethod<const T*>(L);
     add_index_metamethod< std::shared_ptr<T> >(L);
     add_index_metamethod<std::shared_ptr<const T> >(L);
-    lua_pop(L, 1);
 }
 
 // add a function to the metatable of T
@@ -85,10 +83,21 @@ int main(int argc, char *argv[]) {
     add_function< std::vector<int> >(L, "size", &std::vector<int>::size);
     add_function< std::vector<int> >(L, "resize", static_cast<void (std::vector<int>::*)(size_t)>(&std::vector<int>::resize));
     
-    std::vector<int> vec;
-    luacpp11::push(L,  &vec);
+    // lua controlled lifetime
+    luacpp11::emplace< std::vector<int> >(L);
     lua_setglobal(L, "vec");
 
+    // C++ controlled lifetime
+    std::vector<int> vec;
+    luacpp11::push(L,  &vec);
+    lua_setglobal(L, "ptrvec");
+
+    // shared lifetime
+    auto sharedvec = std::make_shared< std::vector<int> >();
+    luacpp11::push(L,  sharedvec);
+    lua_setglobal(L, "sharedvec");
+
+    // const vector (shouldn't have resize)
     const std::vector<int> vec2(42);
     luacpp11::push(L,  &vec2);
     lua_setglobal(L, "vec2");
@@ -99,6 +108,16 @@ int main(int argc, char *argv[]) {
         "print(vec:size())\n"
         "vec:resize(12)\n"
         "print(vec:size())\n"
+
+        "print(\"pointer to vector:\")\n"
+        "print(ptrvec:size())\n"
+        "ptrvec:resize(24)\n"
+        "print(ptrvec:size())\n"
+
+        "print(\"shared_pointer to vector:\")\n"
+        "print(sharedvec:size())\n"
+        "sharedvec:resize(36)\n"
+        "print(sharedvec:size())\n"
 
         "print(\"\\nconst vector:\")\n"
         "print(vec2:size())\n"
