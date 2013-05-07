@@ -48,18 +48,18 @@ int main(int argc, char *argv[]) {
     // function type is be deduced if possible
     luacpp11::push_callable(L, hello);
     lua_setglobal(L, "hello");
-    
+
     luacpp11::push_callable(L, &std::vector<int>::size);
     lua_setglobal(L, "size");
-        
+
     luacpp11::push_callable(L, bar);
     lua_setglobal(L, "bar");
 
     luacpp11::push_callable(L, baz);
     lua_setglobal(L, "baz");
-    
+
     Foo foo;
-    
+
     // explicit function type since it cannot be deduced from the type Foo
     luacpp11::push_callable<int(int)>(L, foo);
     lua_setglobal(L, "foo");
@@ -67,13 +67,13 @@ int main(int argc, char *argv[]) {
     // it can in the case of std::function though
     luacpp11::push_callable(L, std::function<int(int)>(foo));
     lua_setglobal(L, "foo2");
-    
+
     // construct a vector directly in userdata
     luacpp11::emplace< std::vector<int> >(L, 13);
     lua_setglobal(L, "vec");
 
     std::vector<int> v(4);
-    
+
     // pushing by value will move or copy construct
     luacpp11::push(L, v);
     lua_setglobal(L, "valuevec");
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     luacpp11::push(L, sharedptr);
     lua_setglobal(L, "sharedptrvec");
 
-    
+
     int result = luaL_dostring(L,
         "hello()\n"
         "print(bar(1,2,3))\n"
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     }
 
     lua_getglobal(L, "vec");
-    
+
     // to<T> tries to convert between pointer and "value" types (returned by reference)
     // and will also return non const objects as const if requested
     luacpp11::to< std::vector<int> >(L, -1).push_back(42);
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
     // tounchecked<T> only works on exact type matches and doesn't check for
     // correctness
     luacpp11::tounchecked< std::vector<int> >(L, -1).push_back(42);
-    
+
 
     // is<T> tests for the exact type though
     std::cout << std::boolalpha;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     std::cout << luacpp11::isconvertible< std::vector<int> >(L, -1) << ' ';
     std::cout << luacpp11::isconvertible< std::vector<int>* >(L, -1) << ' ';
     std::cout << luacpp11::isconvertible< const std::vector<int> >(L, -1) << std::endl;
-    
+
     lua_pop(L, 1);
 
     result = luaL_dostring(L,
@@ -136,19 +136,19 @@ int main(int argc, char *argv[]) {
     if (result) {
         std::cerr << "Error: " << lua_tostring(L, -1) << std::endl;
     }
-    
+
     // getmetatable pushes the metatable used for the userdata objects of type
     // T onto the stack
     luacpp11::getmetatable< std::vector<int> >(L);
-    
+
     // luacpp11 only adds a __gc method to the metatable
     lua_getfield(L, -1, "__gc");
     if(lua_isfunction(L, -1))
         std::cout << "found __gc function" << std::endl;
-        
+
     lua_pop(L, 2);
-    
-    
+
+
     lua_close(L);
 
     return 0;

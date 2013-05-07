@@ -19,7 +19,7 @@ luacpp11::luareturn index_metamethod(lua_State *L)
 
 // adds the index metamethod to the table at the top of the stack
 void add_index_metamethod(lua_State *L)
-{    
+{
     lua_pushstring(L, "__index");
     luacpp11::push_callable(L, index_metamethod);
     lua_rawset(L, -3);
@@ -60,14 +60,14 @@ namespace luacpp11 {
 
 int main(int argc, char *argv[]) {
     (void)argc; (void)argv;
-    
+
     lua_State *L = luaL_newstate();
 
     luaL_openlibs(L);
-    
+
     luacpp11::emplace< std::vector<int> >(L);
     lua_setglobal(L, "vec");
-    
+
     int result = luaL_dostring(L,
         "print(vec:size())\n"
         "vec:resize(12)\n"
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
     if (result) {
         std::cerr << "Error: " << lua_tostring(L, -1) << std::endl;
     }
-        
+
     lua_close(L);
 
     return 0;

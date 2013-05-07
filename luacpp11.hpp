@@ -23,27 +23,27 @@ struct register_hook {
 };
 
 namespace detail {
-    
+
 // sequence handling tools
 template<typename... T>
 struct type_seq { };
 
 template<int... I>
 struct int_seq { };
- 
+
 template<int L, class seq>
 struct build_int_seq {};
- 
+
 template<int L, int... S>
 struct build_int_seq<L, int_seq<S...> > {
     typedef typename build_int_seq<L-1, int_seq<L-1, S...> >::value value;
 };
- 
+
 template<int... S>
 struct build_int_seq<0, int_seq<S...> > {
     typedef int_seq<S...> value;
 };
- 
+
 template<int L>
 struct make_int_seq {
     typedef typename build_int_seq<L, int_seq< > >::value value;
@@ -54,12 +54,12 @@ struct count;
 
 template<class T, class U, class... Rest>
 struct count<type_seq<U, Rest...>, T> {
-    static const size_t value = count<type_seq<Rest...>, T >::value + (std::is_same<U, T>::value?1:0); 
+    static const size_t value = count<type_seq<Rest...>, T >::value + (std::is_same<U, T>::value?1:0);
 };
 
 template<class T>
 struct count<type_seq< >, T> {
-    static const size_t value = 0; 
+    static const size_t value = 0;
 };
 
 template<class seq, class T>
@@ -67,12 +67,12 @@ struct contains;
 
 template<class T, class U, class... Rest>
 struct contains<type_seq<U, Rest...>, T> {
-    static const bool value = count<type_seq<Rest...>, T >::value || std::is_same<T, U>::value; 
+    static const bool value = count<type_seq<Rest...>, T >::value || std::is_same<T, U>::value;
 };
 
 template<class T>
 struct contains<type_seq< >, T> {
-    static const bool value = false; 
+    static const bool value = false;
 };
 
 template<class seq>
@@ -149,15 +149,15 @@ T* getPointer(lua_State *L, int index)
 
     if(userdataIs<T*>(L, index))
     {
-        return *static_cast<T**>(lua_touserdata(L, index));   
+        return *static_cast<T**>(lua_touserdata(L, index));
     }
     else if(userdataIs<T>(L, index))
     {
-        return static_cast<T*>(lua_touserdata(L, index));   
+        return static_cast<T*>(lua_touserdata(L, index));
     }
     else if(userdataIs< std::shared_ptr<T> >(L, index))
     {
-        return static_cast<std::shared_ptr<T>*>(lua_touserdata(L, index))->get();   
+        return static_cast<std::shared_ptr<T>*>(lua_touserdata(L, index))->get();
     }
     else if(is_const_or_refers_to_const<T>::value)
     {
@@ -171,21 +171,21 @@ T* getPointer(lua_State *L, int index)
 
 template<class T>
 bool canGetPointer(lua_State *L, int index)
-{ 
+{
     if(!lua_isuserdata(L, index))
         return false;
-            
+
     if(userdataIs<T*>(L, index))
     {
-        return true;   
+        return true;
     }
     else if(userdataIs<T>(L, index))
     {
-        return true;   
+        return true;
     }
     else if(userdataIs< std::shared_ptr<T> >(L, index))
     {
-        return true;   
+        return true;
     }
     else if(is_const_or_refers_to_const<T>::value)
     {
@@ -266,12 +266,12 @@ struct StackHelper {
     static typename std::conditional< std::is_pointer<T>::value, T, T&>::type getexact(lua_State *L, int index)
     {
         if(!is(L, index))
-            throw std::runtime_error("type mismatch");        
-        return *static_cast<T*>(lua_touserdata(L, index));   
+            throw std::runtime_error("type mismatch");
+        return *static_cast<T*>(lua_touserdata(L, index));
     }
     static typename std::conditional< std::is_pointer<T>::value, T, T&>::type getunchecked(lua_State *L, int index)
     {
-        return *static_cast<T*>(lua_touserdata(L, index));   
+        return *static_cast<T*>(lua_touserdata(L, index));
     }
     static bool is(lua_State *L, int index)
     {
@@ -310,10 +310,10 @@ struct StackHelper {
             lua_pushcfunction(L, destroy_T);
             lua_rawset(L, -3);
             iter = index_table.insert(map_entry_t(L, luaL_ref(L, LUA_REGISTRYINDEX))).first;
-            
+
             lua_rawgeti(L, LUA_REGISTRYINDEX, iter->second);
             register_hook<T>::on_register(L);
-            return;            
+            return;
         }
         lua_rawgeti(L, LUA_REGISTRYINDEX, iter->second);
     }
@@ -477,14 +477,14 @@ struct TupleStackHelper {
     {
         TupleStackHelper<T, I-1>::push(L, values);
         StackHelper<typename std::tuple_element<I-1, T>::type>::push(L, std::get<I-1>(values));
-    }        
+    }
 };
 
 template<class T>
 struct TupleStackHelper<T, 0> {
     static void push(lua_State*, const T&)
     {
-    }        
+    }
 };
 
 template<class... Args>
@@ -520,23 +520,23 @@ public:
     typedef R return_type;
     typedef type_seq<Args...> Arguments;
     typedef typename make_int_seq<sizeof...(Args)>::value Indices;
- 
+
     template<class F>
     CallHelper(F&& f)
     : fun(std::forward<F>(f))
     {
     }
- 
+
     R operator()(lua_State *L)
     {
         return exec(L, Arguments(), Indices());
     }
-    
+
     int static cfunction_call(lua_State *L)
     {
         static_assert(count<Arguments, lua_State* >::value <= 1, "to many lua_State* arguments");
-        static_assert((count<Arguments, lua_State* >::value != 1) || 
-                    (std::is_same<typename last<Arguments>::type, lua_State*>::value), 
+        static_assert((count<Arguments, lua_State* >::value != 1) ||
+                    (std::is_same<typename last<Arguments>::type, lua_State*>::value),
                     "lua_State* has to be last argument");
 
         if(count<Arguments, lua_State* >::value == 0)
@@ -553,9 +553,9 @@ public:
             {
                 lua_pushfstring(L, "expected at least %d arguments but got %d", sizeof...(Args), lua_gettop(L));
                 lua_error(L);
-            }            
+            }
         }
-        
+
         CallHelper &helper = *static_cast <CallHelper*> (lua_touserdata (L, lua_upvalueindex (1)));
         StackHelper<R>::push(L, helper(L));
         return return_value_count<R>::value;
@@ -575,23 +575,23 @@ public:
     typedef void return_type;
     typedef type_seq<Args...> Arguments;
     typedef typename make_int_seq<sizeof...(Args)>::value Indices;
- 
+
     template<class F>
     CallHelper(F&& f)
     : fun(std::forward<F>(f))
     {
     }
- 
+
     void operator()(lua_State *L)
     {
         exec(L, Arguments(), Indices());
     }
-    
+
     int static cfunction_call(lua_State *L)
     {
         static_assert(count<Arguments, lua_State* >::value <= 1, "to many lua_State* arguments");
-        static_assert((count<Arguments, lua_State* >::value != 1) || 
-                    (std::is_same<typename last<Arguments>::type, lua_State*>::value), 
+        static_assert((count<Arguments, lua_State* >::value != 1) ||
+                    (std::is_same<typename last<Arguments>::type, lua_State*>::value),
                     "lua_State* has to be last argument");
 
         if(count<Arguments, lua_State* >::value == 0)
@@ -608,9 +608,9 @@ public:
             {
                 lua_pushfstring(L, "expected at least %d arguments but got %d", sizeof...(Args), lua_gettop(L));
                 lua_error(L);
-            }            
+            }
         }
-        
+
         CallHelper &helper = *static_cast <CallHelper*> (lua_touserdata (L, lua_upvalueindex (1)));
         helper(L);
         return 0;
@@ -630,23 +630,23 @@ public:
     typedef luareturn return_type;
     typedef type_seq<Args...> Arguments;
     typedef typename make_int_seq<sizeof...(Args)>::value Indices;
- 
+
     template<class F>
     CallHelper(F&& f)
     : fun(std::forward<F>(f))
     {
     }
- 
+
     int operator()(lua_State *L)
     {
         return exec(L, Arguments(), Indices());
     }
-    
+
     int static cfunction_call(lua_State *L)
     {
         static_assert(count<Arguments, lua_State* >::value <= 1, "to many lua_State* arguments");
-        static_assert((count<Arguments, lua_State* >::value != 1) || 
-                    (std::is_same<typename last<Arguments>::type, lua_State*>::value), 
+        static_assert((count<Arguments, lua_State* >::value != 1) ||
+                    (std::is_same<typename last<Arguments>::type, lua_State*>::value),
                     "lua_State* has to be last argument");
 
         if(count<Arguments, lua_State* >::value == 0)
@@ -663,9 +663,9 @@ public:
             {
                 lua_pushfstring(L, "expected at least %d arguments but got %d", sizeof...(Args), lua_gettop(L));
                 lua_error(L);
-            }            
+            }
         }
-        
+
         CallHelper &helper = *static_cast <CallHelper*> (lua_touserdata (L, lua_upvalueindex (1)));
         return helper(L);
     }

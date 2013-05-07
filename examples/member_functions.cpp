@@ -20,7 +20,7 @@ luacpp11::luareturn index_metamethod(lua_State *L)
 // adds the index metamethod to a type T
 template<class T>
 void add_index_metamethod(lua_State *L)
-{    
+{
     luacpp11::getmetatable<T>(L);
     lua_pushstring(L, "__index");
     luacpp11::push_callable(L, index_metamethod);
@@ -74,7 +74,7 @@ void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...) cons
 
 int main(int argc, char *argv[]) {
     (void)argc; (void)argv;
-    
+
     lua_State *L = luaL_newstate();
 
     luaL_openlibs(L);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     register_class< std::vector<int> >(L);
     add_function< std::vector<int> >(L, "size", &std::vector<int>::size);
     add_function< std::vector<int> >(L, "resize", static_cast<void (std::vector<int>::*)(size_t)>(&std::vector<int>::resize));
-    
+
     // lua controlled lifetime
     luacpp11::emplace< std::vector<int> >(L);
     lua_setglobal(L, "vec");
@@ -101,8 +101,8 @@ int main(int argc, char *argv[]) {
     const std::vector<int> vec2(42);
     luacpp11::push(L,  &vec2);
     lua_setglobal(L, "vec2");
-    
-    
+
+
     int result = luaL_dostring(L,
         "print(\"vector:\")\n"
         "print(vec:size())\n"
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     if (result) {
         std::cerr << "Error: " << lua_tostring(L, -1) << std::endl;
     }
-        
+
     lua_close(L);
 
     return 0;

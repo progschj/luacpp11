@@ -5,7 +5,7 @@ design of the lua C API.
 
 ## Summary
 
-luacpp11 is designed to be used along with the lua C API. As such it doesn't 
+luacpp11 is designed to be used along with the lua C API. As such it doesn't
 implement higher order abstraction like registration facilities for classes and
 doesn't set up elaborate metatables for C++ types (it creates metatables but
 only adds a `__gc` metafunction). All the functionality is exposed through
@@ -14,14 +14,14 @@ function templates that mimic similar functions in the lua C API.
 The library is header only and thus doesn't have to be compiled separately.
 Since the library doesn't include any lua headers by itself it has to be
 included after those. All public functions and types are placed into the
-`luacpp11` namespace. 
+`luacpp11` namespace.
 
 ### `push_callable`
 
 `push_callable` is an overloaded function that is used to push almost any
 callable C++ object onto the lua stack. For function pointers (member and
 non-member) and `std::function` objects the return and argument types are
-deduced automatically otherwise they have to be specified. 
+deduced automatically otherwise they have to be specified.
 
 ```c++
 int foo(double arg) { ... }
@@ -128,7 +128,7 @@ luacpp11::to<const A*>(L, -1);  // ok
 
 ### `toexact`
 `toexact<T>` retrieves a object of type `T` from a given index without trying to
-perform any conversions. 
+perform any conversions.
 
 ```c++
 A a;
@@ -159,7 +159,7 @@ luacpp11::getmetatable< std::vector<int> >(L);
 lua_getfield(L, -1, "__gc");
 if(lua_isfunction(L, -1))
     std::cout << "found __gc function" << std::endl;
-    
+
 lua_pop(L, 2);
 ```
 
@@ -168,7 +168,7 @@ lua_pop(L, 2);
 The `register_hook` trait can be used to execute code whenever luacpp11 internally
 creates a metatable for a given type. This happens once per type and lua_State
 on first use of the type. This can be used to perform more elaborate type
-type registration (like adding metamethods etc.) on demand.
+registration (like adding metamethods etc.) on demand.
 
 ```c++
 namespace luacpp11 {
@@ -178,7 +178,7 @@ namespace luacpp11 {
         {
             lua_pushstring(L, "__len");
             // __len can have a second nil argument so we can't use ::size directly
-            luacpp11::push_callable<size_t(std::vector<T>*, lua_State*)>(L, 
+            luacpp11::push_callable<size_t(std::vector<T>*, lua_State*)>(L,
                 [](std::vector<T> *v, lua_State*){ return v->size(); }
             );
             lua_rawset(L, -3);
