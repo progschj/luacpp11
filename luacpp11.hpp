@@ -151,6 +151,31 @@ T* getPointer(lua_State *L, int index)
 }
 
 template<class T>
+bool canGetPointer(lua_State *L, int index)
+{    
+    if(StackHelper<T*>::is(L, index))
+    {
+        return true;   
+    }
+    else if(StackHelper<T>::is(L, index))
+    {
+        return true;   
+    }
+    else if(StackHelper< std::shared_ptr<T> >::is(L, index))
+    {
+        return true;   
+    }
+    else if(is_const_or_refers_to_const<T>::value)
+    {
+        return canGetPointer<typename remove_const_or_refers_to_const<T>::type>(L, index);
+    }
+    else
+    {
+        return false;
+    }
+}
+
+template<class T>
 struct GetHelper {
     template<int Index>
     static T& get(lua_State *L)
@@ -168,7 +193,7 @@ struct GetHelper {
         T *ptr = getPointer<T>(L, index);
         if(ptr == nullptr)
         {
-            throw std::runtime_error("type mismatch in get");
+            throw std::runtime_error("type mismatch");
         }
         return *ptr;
     }
@@ -195,7 +220,7 @@ struct GetHelper<U*> {
         T ptr = getPointer<U>(L, index);
         if(ptr == nullptr)
         {
-            throw std::runtime_error("type mismatch in get");
+            throw std::runtime_error("type mismatch");
         }
         return ptr;
     }
@@ -212,6 +237,20 @@ struct StackHelper {
     static typename std::conditional< std::is_pointer<T>::value, T, T&>::type get(lua_State *L, int index)
     {
         return GetHelper<T>::get(L, index);
+    }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return canGetPointer<typename std::remove_pointer<T>::type>(L, index);
+    }
+    static typename std::conditional< std::is_pointer<T>::value, T, T&>::type getexact(lua_State *L, int index)
+    {
+        if(!is(L, index))
+            throw std::runtime_error("type mismatch");        
+        return *static_cast<T*>(lua_touserdata(L, index));   
+    }
+    static typename std::conditional< std::is_pointer<T>::value, T, T&>::type getunchecked(lua_State *L, int index)
+    {
+        return *static_cast<T*>(lua_touserdata(L, index));   
     }
     static bool is(lua_State *L, int index)
     {
@@ -705,7 +744,6 @@ void emplace(lua_State *L, Args&& ...args)
     detail::StackHelper<T>::emplace(L, std::forward<Args>(args)...);
 }
 
-
 template<class T>
 bool is(lua_State *L, int index)
 {
@@ -713,9 +751,27 @@ bool is(lua_State *L, int index)
 }
 
 template<class T>
+bool isconvertible(lua_State *L, int index)
+{
+    return detail::StackHelper<T>::isconvertible(L, index);
+}
+
+template<class T>
 auto to(lua_State *L, int index) -> decltype(detail::StackHelper<T>::get(L, index))
 {
     return detail::StackHelper<T>::get(L, index);
+}
+
+template<class T>
+auto toexact(lua_State *L, int index) -> decltype(detail::StackHelper<T>::getexact(L, index))
+{
+    return detail::StackHelper<T>::getexact(L, index);
+}
+
+template<class T>
+auto tounchecked(lua_State *L, int index) -> decltype(detail::StackHelper<T>::getexact(L, index))
+{
+    return detail::StackHelper<T>::getunchecked(L, index);
 }
 
 template<class T>

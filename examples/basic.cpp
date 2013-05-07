@@ -109,11 +109,24 @@ int main(int argc, char *argv[]) {
     luacpp11::to< std::vector<int>* >(L, -1)->push_back(42);
     luacpp11::to< const std::vector<int> >(L, -1).size();
 
+    // toexact<T> only works on exact type matches
+    luacpp11::toexact< std::vector<int> >(L, -1).push_back(42);
+
+    // tounchecked<T> only works on exact type matches and doesn't check for
+    // correctness
+    luacpp11::tounchecked< std::vector<int> >(L, -1).push_back(42);
+    
+
     // is<T> tests for the exact type though
     std::cout << std::boolalpha;
     std::cout << luacpp11::is< std::vector<int> >(L, -1) << ' ';
     std::cout << luacpp11::is< std::vector<int>* >(L, -1) << ' ';
     std::cout << luacpp11::is< const std::vector<int> >(L, -1) << std::endl;
+
+    // isconvertible<T> tests if we can get the value by using to<T>
+    std::cout << luacpp11::isconvertible< std::vector<int> >(L, -1) << ' ';
+    std::cout << luacpp11::isconvertible< std::vector<int>* >(L, -1) << ' ';
+    std::cout << luacpp11::isconvertible< const std::vector<int> >(L, -1) << std::endl;
     
     lua_pop(L, 1);
 
@@ -140,21 +153,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-/* output:
-
-hello world
-bar called with 0 arguments
-23
-bar called with 3 arguments
-23
-121
-144
-13
-4
-4
-true false false
-15
-found __gc function
-
-*/

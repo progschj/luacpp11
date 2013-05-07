@@ -83,6 +83,20 @@ luacpp11::is<A>(L, -1);         // true
 luacpp11::is<const A>(L, -1);   // false
 luacpp11::is<A*>(L, -1);        // false
 luacpp11::is<const A*>(L, -1);  // false
+luacpp11::is<B>(L, -1);         // false
+```
+
+### `isconvertible`
+`isconvertible<T>` returns true if the object at a given index is of type `T` or
+can be converted to it by `to`.
+
+```c++
+luacpp11::emplace<A>(L);
+luacpp11::isconvertible<A>(L, -1);         // true
+luacpp11::isconvertible<const A>(L, -1);   // true
+luacpp11::isconvertible<A*>(L, -1);        // true
+luacpp11::isconvertible<const A*>(L, -1);  // true
+luacpp11::isconvertible<B>(L, -1);         // false
 ```
 
 ### `to`
@@ -111,6 +125,26 @@ luacpp11::to<const A>(L, -1);   // ok
 luacpp11::to<A*>(L, -1);        // exception
 luacpp11::to<const A*>(L, -1);  // ok
 ```
+
+### `toexact`
+`toexact<T>` retrieves a object of type `T` from a given index without trying to
+perform any conversions. 
+
+```c++
+A a;
+luacpp11::push(L, &a);
+luacpp11::to<A>(L, -1);         // exception
+luacpp11::to<const A>(L, -1);   // exception
+luacpp11::to<A*>(L, -1);        // ok
+luacpp11::to<const A*>(L, -1);  // exception
+```
+
+### `tounchecked`
+`tounchecked<T>` retrieves a object of type `T` from a given index without
+trying to perform any conversions or type checks. This may result in  undefined
+behavior if the object at the given stack index isn't of the correct type.
+
+
 ### `getmetatable`
 `getmetatable<T>` pushes the metatable associated with T onto the stack. Again
 `T`, `const T`, `T*` and `const T*` are different types in this context and will
