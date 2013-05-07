@@ -88,7 +88,8 @@ luacpp11::is<const A*>(L, -1);  // false
 ### `to`
 `to<T>` retrieves a object of type `T` from a given index and throws an exception
 in case of a type mismatch. This function will "convert" from and to pointer
-types as well as to const.
+types as well as to const. Additionally it will also convert shared_ptr to pointer
+or value types.
 
 ```c++
 A a;

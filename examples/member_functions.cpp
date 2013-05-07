@@ -37,6 +37,8 @@ void register_class(lua_State *L)
     add_index_metamethod<const T>(L);
     add_index_metamethod<T*>(L);
     add_index_metamethod<const T*>(L);
+    add_index_metamethod< std::shared_ptr<T> >(L);
+    add_index_metamethod<std::shared_ptr<const T> >(L);
     lua_pop(L, 1);
 }
 
@@ -57,6 +59,7 @@ void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...))
 {
     add_function_single<T>(L, name, f);
     add_function_single<T*>(L, name, f);
+    add_function_single< std::shared_ptr<T> >(L, name, f);
 }
 
 // add const functions to all metatables
@@ -65,8 +68,10 @@ void add_function(lua_State *L, const std::string &name, R (T::*f)(Args...) cons
 {
     add_function_single<T>(L, name, f);
     add_function_single<T*>(L, name, f);
+    add_function_single< std::shared_ptr<T> >(L, name, f);
     add_function_single<const T>(L, name, f);
     add_function_single<const T*>(L, name, f);
+    add_function_single< std::shared_ptr<const T> >(L, name, f);
 }
 
 int main(int argc, char *argv[]) {

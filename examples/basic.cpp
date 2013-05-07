@@ -81,6 +81,10 @@ int main(int argc, char *argv[]) {
     luacpp11::push(L, &v);
     lua_setglobal(L, "ptrvec");
 
+    auto sharedptr = std::make_shared< std::vector<int> >(23);
+    luacpp11::push(L, sharedptr);
+    lua_setglobal(L, "sharedptrvec");
+
     
     int result = luaL_dostring(L,
         "hello()\n"
@@ -91,6 +95,7 @@ int main(int argc, char *argv[]) {
         "print(size(vec))\n"
         "print(size(ptrvec))\n"
         "print(size(valuevec))\n"
+        "print(size(sharedptrvec))\n"
     );
     if (result) {
         std::cerr << "Error: " << lua_tostring(L, -1) << std::endl;

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <string>
 #include <stdexcept>
+#include <memory>
 
 namespace luacpp11 {
 
@@ -125,15 +126,36 @@ template<class T, class Enable = void>
 struct StackHelper;
 
 template<class T>
+T* getPointer(lua_State *L, int index)
+{
+    if(StackHelper<T*>::is(L, index))
+    {
+        return *static_cast<T**>(lua_touserdata(L, index));   
+    }
+    else if(StackHelper<T>::is(L, index))
+    {
+        return static_cast<T*>(lua_touserdata(L, index));   
+    }
+    else if(StackHelper< std::shared_ptr<T> >::is(L, index))
+    {
+        return static_cast<std::shared_ptr<T>*>(lua_touserdata(L, index))->get();   
+    }
+    else if(is_const_or_refers_to_const<T>::value)
+    {
+        return getPointer<typename remove_const_or_refers_to_const<T>::type>(L, index);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+template<class T>
 struct GetHelper {
     template<int Index>
     static T& get(lua_State *L)
     {
-        T *ptr = getPointer(L, Index);
-        if(ptr == nullptr)
-        {
-            ptr = GetHelper<T*>::getPointer(L, Index);
-        }
+        T *ptr = getPointer<T>(L, Index);
         if(ptr == nullptr)
         {
             lua_pushfstring(L, "expected userdata in argument %d", Index);
@@ -143,27 +165,12 @@ struct GetHelper {
     }
     static T& get(lua_State *L, int index)
     {
-        T *ptr = getPointer(L, index);
-        if(ptr == nullptr)
-        {
-            ptr = GetHelper<T*>::getPointer(L, index);
-        }
+        T *ptr = getPointer<T>(L, index);
         if(ptr == nullptr)
         {
             throw std::runtime_error("type mismatch in get");
         }
         return *ptr;
-    }
-    static T* getPointer(lua_State *L, int index)
-    {
-        if(!StackHelper<T>::is(L, index))
-        {
-            if(is_const_or_refers_to_const<T>::value && StackHelper<typename remove_const_or_refers_to_const<T>::type>::is(L, index))
-                return static_cast<T*>(lua_touserdata(L, index));
-            else
-                return nullptr;
-        }
-        return static_cast<T*>(lua_touserdata(L, index));   
     }
 };
 
@@ -174,11 +181,7 @@ struct GetHelper<U*> {
     static T get(lua_State *L)
     {
         if(lua_isnil(L, Index)) return nullptr;
-        T ptr = getPointer(L, Index);
-        if(ptr == nullptr)
-        {
-            ptr = GetHelper<U>::getPointer(L, Index);
-        }
+        T ptr = getPointer<U>(L, Index);
         if(ptr == nullptr)
         {
             lua_pushfstring(L, "expected userdata in argument %d", Index);
@@ -189,29 +192,15 @@ struct GetHelper<U*> {
     static T get(lua_State *L, int index)
     {
         if(lua_isnil(L, index)) return nullptr;
-        T ptr = getPointer(L, index);
-        if(ptr == nullptr)
-        {
-            ptr = GetHelper<U>::getPointer(L, index);
-        }
+        T ptr = getPointer<U>(L, index);
         if(ptr == nullptr)
         {
             throw std::runtime_error("type mismatch in get");
         }
         return ptr;
     }
-    static T getPointer(lua_State *L, int index)
-    {
-        if(!StackHelper<T>::is(L, index))
-        {
-            if(is_const_or_refers_to_const<T>::value && StackHelper<typename remove_const_or_refers_to_const<T>::type>::is(L, index))
-                return *static_cast<T*>(lua_touserdata(L, index));
-            else
-                return nullptr;
-        }
-        return *static_cast<T*>(lua_touserdata(L, index));   
-    }
 };
+
 
 template<class T, class Enable>
 struct StackHelper {
