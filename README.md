@@ -163,6 +163,10 @@ if(lua_isfunction(L, -1))
 lua_pop(L, 2);
 ```
 
+### `ref`
+
+`luacpp11::ref` holds a reference to any object in lua. 
+
 ### The `register_hook` trait
 
 The `register_hook` trait can be used to execute code whenever luacpp11 internally

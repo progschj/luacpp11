@@ -11,6 +11,11 @@
 
 namespace luacpp11 {
 
+namespace detail {
+template<class T, class Enable = void>
+struct StackHelper;
+}
+
 // return type for functions pushing their own return values
 struct luareturn {
     luareturn(int count) : count(count) {}
@@ -20,6 +25,34 @@ struct luareturn {
 template<class T>
 struct register_hook {
     static void on_register(lua_State *L) { }
+};
+
+class ref {
+public:
+    ref(const ref &that) : L(that.L)
+    {
+        if(that.L != 0)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, that.r);
+            r = luaL_ref(L, LUA_REGISTRYINDEX);
+        }
+    }
+    ref(ref &&that) : L(that.L), r(that.r)
+    {
+        that.L = 0;
+    }
+    ~ref()
+    {
+        if(L != 0)
+            luaL_unref(L, LUA_REGISTRYINDEX, r);
+    }
+private:
+    friend struct detail::StackHelper<ref>;
+
+    ref(lua_State *L, int r) : L(L), r(r) { }
+
+    lua_State *L;
+    int r;
 };
 
 namespace detail {
@@ -126,9 +159,6 @@ template<class T>
 struct remove_const_or_refers_to_const<const T*> { typedef T* type; };
 template<class T>
 struct remove_const_or_refers_to_const<const T&> { typedef T& type; };
-
-template<class T, class Enable = void>
-struct StackHelper;
 
 template<class T>
 bool userdataIs(lua_State *L, int index)
@@ -332,6 +362,7 @@ struct StackHelper<T, typename std::enable_if<std::is_lvalue_reference<T>::value
 {
 };
 
+
 template<class T>
 struct StackHelper<T, typename std::enable_if<std::is_integral<T>::value && !std::is_same<typename std::remove_cv<T>::type, bool>::value >::type> {
     template<int Index>
@@ -348,7 +379,21 @@ struct StackHelper<T, typename std::enable_if<std::is_integral<T>::value && !std
     {
         return lua_isnumber(L, index);
     }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return is(L, index);
+    }
     static T get(lua_State *L, int index)
+    {
+        return getexact(L, index);
+    }
+    static T getexact(lua_State *L, int index)
+    {
+        if(!is(L, index))
+            throw std::runtime_error("type mismatch");
+        return getunchecked(L, index);
+    }
+    static T getunchecked(lua_State *L, int index)
     {
         return lua_tointeger(L, index);
     }
@@ -374,7 +419,21 @@ struct StackHelper<T, typename std::enable_if<std::is_same<typename std::remove_
     {
         return lua_isboolean(L, index);
     }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return is(L, index);
+    }
     static T get(lua_State *L, int index)
+    {
+        return getexact(L, index);
+    }
+    static T getexact(lua_State *L, int index)
+    {
+        if(!is(L, index))
+            throw std::runtime_error("type mismatch");
+        return getunchecked(L, index);
+    }
+    static T getunchecked(lua_State *L, int index)
     {
         return lua_toboolean(L, index);
     }
@@ -400,7 +459,21 @@ struct StackHelper<T, typename std::enable_if<std::is_floating_point<T>::value >
     {
         return lua_isnumber(L, index);
     }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return is(L, index);
+    }
     static T get(lua_State *L, int index)
+    {
+        return getexact(L, index);
+    }
+    static T getexact(lua_State *L, int index)
+    {
+        if(!is(L, index))
+            throw std::runtime_error("type mismatch");
+        return getunchecked(L, index);
+    }
+    static T getunchecked(lua_State *L, int index)
     {
         return lua_tonumber(L, index);
     }
@@ -426,13 +499,27 @@ struct StackHelper<T, typename std::enable_if<std::is_same<typename std::remove_
     {
         return lua_isstring(L, index);
     }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return is(L, index);
+    }
     static T get(lua_State *L, int index)
+    {
+        return getexact(L, index);
+    }
+    static T getexact(lua_State *L, int index)
+    {
+        if(!is(L, index))
+            throw std::runtime_error("type mismatch");
+        return getunchecked(L, index);
+    }
+    static T getunchecked(lua_State *L, int index)
     {
         return T(lua_tostring(L, index));
     }
     static void push(lua_State *L, const T &value)
     {
-        lua_pushstring(L, value);
+        lua_pushstring(L, value.c_str());
     }
 };
 
@@ -452,13 +539,64 @@ struct StackHelper<T, typename std::enable_if<std::is_same<T, const char*>::valu
     {
         return lua_isstring(L, index);
     }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return is(L, index);
+    }
     static T get(lua_State *L, int index)
+    {
+        return getexact(L, index);
+    }
+    static T getexact(lua_State *L, int index)
+    {
+        if(!is(L, index))
+            throw std::runtime_error("type mismatch");
+        return getunchecked(L, index);
+    }
+    static T getunchecked(lua_State *L, int index)
     {
         return lua_tostring(L, index);
     }
     static void push(lua_State *L, T value)
     {
         lua_pushstring(L, value);
+    }
+};
+
+template<class T>
+struct StackHelper<T, typename std::enable_if<std::is_same<T, ref>::value >::type> {
+    template<int Index>
+    static T get(lua_State *L)
+    {
+        lua_pushvalue(L, Index);
+        return ref(L, luaL_ref(L, LUA_REGISTRYINDEX));
+    }
+    static bool is(lua_State *L, int index)
+    {
+        return true;
+    }
+    static bool isconvertible(lua_State *L, int index)
+    {
+        return true;
+    }
+    static T get(lua_State *L, int index)
+    {
+        return getexact(L, index);
+    }
+    static T getexact(lua_State *L, int index)
+    {
+        return getunchecked(L, index);
+    }
+    static T getunchecked(lua_State *L, int index)
+    {
+        lua_pushvalue(L, index);
+        return ref(L, luaL_ref(L, LUA_REGISTRYINDEX));
+    }
+    static void push(lua_State *L, const T &value)
+    {
+        if(L != value.L)
+            std::runtime_error("lua_State mismatch");
+        lua_rawgeti(L, LUA_REGISTRYINDEX, value.r);
     }
 };
 
