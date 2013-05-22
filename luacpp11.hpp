@@ -41,6 +41,20 @@ public:
     {
         that.L = 0;
     }
+    ref& operator=(const ref &that)
+    {
+        ref tmp(that);
+        std::swap(tmp.L, L);
+        std::swap(tmp.r, r);
+        return *this;
+    }
+    ref& operator=(ref &&that)
+    {
+        L = that.L;
+        r = that.r;
+        that.L = 0;
+        return *this;
+    }
     ~ref()
     {
         if(L != 0)
