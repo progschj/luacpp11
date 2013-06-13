@@ -165,7 +165,11 @@ lua_pop(L, 2);
 
 ### `ref`
 
-`luacpp11::ref` holds a reference to any object in lua. 
+`luacpp11::ref` holds a reference to any object in lua. `ref` objects
+can be obtained by using the `to...` functions on any object on the
+stack and pushed back into it without requiring knoweldge of the object
+type. It internally uses the `luaL_ref` mechanism, so it can also
+be used to prevent collection of lua created objects.
 
 ### The `register_hook` trait
 
