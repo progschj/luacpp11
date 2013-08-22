@@ -292,6 +292,22 @@ struct GetHelper<U*> {
     }
 };
 
+inline lua_State* parent_state(lua_State *L, lua_State *L2 = nullptr) {
+    static std::unordered_map<lua_State*, lua_State*> parent_map;
+    if(L2 == nullptr)
+    {
+        auto iter = parent_map.find(L);
+        if(iter == parent_map.end())
+            return L;
+        else
+            return iter->second;
+    }
+    else
+    {
+        return parent_map[L2] = parent_state(L);
+    }
+}
+
 template<class T, class Enable>
 struct StackHelper {
     template<int Index>
@@ -346,7 +362,7 @@ struct StackHelper {
     {
         typedef typename std::unordered_map<lua_State*, int>::value_type map_entry_t;
         static std::unordered_map<lua_State*, int> index_table;
-        auto iter = index_table.find(L);
+        auto iter = index_table.find(parent_state(L));
         if(iter == index_table.end())
         {
             lua_newtable(L);
@@ -833,13 +849,15 @@ private:
 template<class C, class R, class... Args>
 struct mem_fun_wrap {
     mem_fun_wrap(R (C::*fun)(Args...)) : fun(fun) { }
-    R operator()(C *c, Args&&... args) const
+    template<class... Args2>
+    R operator()(C *c, Args2&&... args) const
     {
         return (c->*fun)(std::forward<Args>(args)...);
     }
-    R operator()(C &c, Args&&... args) const
+    template<class... Args2>
+    R operator()(C &c, Args2&&... args) const
     {
-        return (c.*fun)(std::forward<Args>(args)...);
+        return (c.*fun)(std::forward<Args2>(args)...);
     }
 private:
     R (C::*fun)(Args...);
@@ -848,13 +866,15 @@ private:
 template<class C, class R, class... Args>
 struct const_mem_fun_wrap {
     const_mem_fun_wrap(R (C::*fun)(Args...) const) : fun(fun) { }
-    R operator()(const C *c, Args&&... args) const
+    template<class... Args2>
+    R operator()(const C *c, Args2&&... args) const
     {
-        return (c->*fun)(std::forward<Args>(args)...);
+        return (c->*fun)(std::forward<Args2>(args)...);
     }
-    R operator()(const C &c, Args&&... args) const
+    template<class... Args2>
+    R operator()(const C &c, Args2&&... args) const
     {
-        return (c.*fun)(std::forward<Args>(args)...);
+        return (c.*fun)(std::forward<Args2>(args)...);
     }
 private:
     R (C::*fun)(Args...) const;
@@ -950,6 +970,13 @@ template<class T>
 void getmetatable(lua_State *L)
 {
     detail::StackHelper<T>::getmetatable(L);
+}
+
+inline lua_State* newthread(lua_State *L)
+{
+    lua_State *L2 = lua_newthread(L);
+    detail::parent_state(L, L2);
+    return L2;
 }
 
 }

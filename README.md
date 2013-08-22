@@ -133,10 +133,10 @@ perform any conversions.
 ```c++
 A a;
 luacpp11::push(L, &a);
-luacpp11::to<A>(L, -1);         // exception
-luacpp11::to<const A>(L, -1);   // exception
-luacpp11::to<A*>(L, -1);        // ok
-luacpp11::to<const A*>(L, -1);  // exception
+luacpp11::toexact<A>(L, -1);         // exception
+luacpp11::toexact<const A>(L, -1);   // exception
+luacpp11::toexact<A*>(L, -1);        // ok
+luacpp11::toexact<const A*>(L, -1);  // exception
 ```
 
 ### `tounchecked`
@@ -170,6 +170,15 @@ can be obtained by using the `to...` functions on any object on the
 stack and pushed back into it without requiring knoweldge of the object
 type. It internally uses the `luaL_ref` mechanism, so it can also
 be used to prevent collection of lua created objects.
+
+### `newthread`
+
+`luacpp11::newthread` should be used instead of `lua_newthread` if
+luacpp11 types are involved. It has the same behavior with the exception
+that it allows luacpp11 to associate thread states with their original
+states. Otherwise custom types will get their own meta table in each
+state and userdata types created in one thread will not be recognized
+in other threads that share the same global environment.
 
 ### The `register_hook` trait
 
